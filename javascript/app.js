@@ -12,28 +12,44 @@ firebase.initializeApp(config);
 var database = firebase.database();
 
 var name = "";
-var role = "";
-var start = "";
-var rate = "";
+var destination = "";
+var ftime = "";
+var frequency = "";
 
 $(".btn").on("click", function(event) {
   event.preventDefault();
-  name = $("#employee-name").val();
-  role = $("#role").val();
-  start = $("#start-date").val();
-  rate = $("#monthly-rate").val();
+  name = $("#train-name").val();
+  destination = $("#destination").val();
+  ftime = moment($("#ftime").val().trim(), "HH:mm").subtract(10, "years").format("X");
+  frequency = $("#frequency").val();
 
   database.ref().push({
     name: name,
-    role: role,
-    start: start,
-    rate: rate
+    destination: destination,
+    frequency: frequency,
+    ftime: ftime
   });
 });
 
-database.ref().on("child_added", function(snapshot) {
-  var newTr = snapshot.val();
-  console.log(snapshot.val());
+database.ref().on("child_added", function(childSnapshot) {
+  var name = childSnapshot.val().name;
+  var destination = childSnapshot.val().destination;
+  var frequency = childSnapshot.val().frequency;
+  var ftime = childSnapshot.val().ftime;
+
+  var timeRemainder = moment().diff(moment.unix(ftime), "minutes") % frequency;
+  var minutesAway = frequency - timeRemainder;
+  var nextTrainArrival = moment().add(minutesAway, "m").format("hh:mm A");
+
+  //console.log(snapshot.val());
+  var newTr = {
+    name : name,
+    destination : destination,
+    frequency : frequency,
+    nextTrainArrival : nextTrainArrival,
+    minutesAway : minutesAway
+  };
+
   $("table").append(makeRow(newTr));
 });
 
@@ -42,11 +58,10 @@ function makeRow(data) {
     <tbody>
     <tr>
       <td>${data.name}</td>
-      <td>${data.role}</td>
-      <td>${data.start}</td>
-      <td>${data.monthsWorked}</td>
-      <td>${data.rate}</td>
-      <td>${data.totalBilled}</td>
+      <td>${data.destination}</td>
+      <td>${data.frequency}</td>
+      <td>${data.nextTrainArrival}</td>
+      <td>${data.minutesAway}</td>
     </tr>
   </tbody>
     `;
